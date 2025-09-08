@@ -1,29 +1,25 @@
-from functions.get_files_info import get_files_info
+from functions.get_file_content import get_file_content
 
 
 def run_tests():
     cases = [
-        ("calculator", "."),
-        ("calculator", "pkg"),
-        ("calculator", "/bin"),
-        ("calculator", "../"),
+        ("calculator", "main.py"),
+        ("calculator", "pkg/calculator.py"),
+        ("calculator", "/bin/cat"),
+        ("calculator", "pkg/does_not_exist.py"),
     ]
 
-    for working_dir, directory in cases:
-        print(f'get_files_info("{working_dir}", "{directory}"):')
+    for working_dir, file_path in cases:
+        print(f'get_file_content("{working_dir}", "{file_path}"):')
 
-        result = get_files_info(working_dir, directory)
+        result = get_file_content(working_dir, file_path)
 
-        if directory == ".":
-            print("Result for current directory:")
-        else:
-            print(f"Result for '{directory}' directory:")
-
-        # Indent each line of result
+        print("Result:")
+        # Indent each line of output
         for line in result.splitlines():
-            print(f" {line}")
+            print(" " + line)
 
-        print()  # Extra newline between test cases
+        print()  # Blank line between cases
 
 
 if __name__ == "__main__":
