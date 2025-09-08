@@ -1,25 +1,24 @@
-from functions.get_file_content import get_file_content
+from functions.write_file import write_file
 
 
 def run_tests():
     cases = [
-        ("calculator", "main.py"),
-        ("calculator", "pkg/calculator.py"),
-        ("calculator", "/bin/cat"),
-        ("calculator", "pkg/does_not_exist.py"),
+        ("calculator", "lorem.txt", "wait, this isn't lorem ipsum"),
+        ("calculator", "pkg/morelorem.txt", "lorem ipsum dolor sit amet"),
+        ("calculator", "/tmp/temp.txt", "this should not be allowed"),
     ]
 
-    for working_dir, file_path in cases:
-        print(f'get_file_content("{working_dir}", "{file_path}"):')
+    for working_dir, file_path, content in cases:
+        print(f'write_file("{working_dir}", "{file_path}", "{content}"):')
 
-        result = get_file_content(working_dir, file_path)
+        result = write_file(working_dir, file_path, content)
 
         print("Result:")
-        # Indent each line of output
+
         for line in result.splitlines():
             print(" " + line)
 
-        print()  # Blank line between cases
+        print()
 
 
 if __name__ == "__main__":
