@@ -34,19 +34,10 @@ You do not need to specify the working directory in your function calls
 as it is automatically injected for security reasons.
 """
 
-config=types.GenerateContentConfig(
-    tools=[available_functions], system_instruction=system_prompt
-)
-
-messages = []
-
 load_dotenv()
 api_key = os.environ.get("GEMINI_API_KEY")
 
 client = genai.Client(api_key=api_key)
-
-def add_message(user, message):
-    messages.append({"role": user, "parts": [{"text": message}]})
 
 def main():
     if len(sys.argv) < 2:
@@ -65,29 +56,44 @@ def main():
     if verbose:
         print(f'User prompt: "{user_prompt}"')
 
-    add_message("user", user_prompt)
+    messages = [
+        types.Content(role="user", parts=[types.Part.from_text(text=user_prompt)]),
+    ]
 
-    response = client.models.generate_content(
-        model="gemini-2.0-flash-001",
-        contents=messages,
-        config=config,
-    )
+    for iteration in range(20):
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-001",
+            contents=messages,
+            config=types.GenerateContentConfig(
+                tools=[available_functions],
+                system_instruction=system_prompt,
+            ),
+        )
 
-    if response.candidates[0].content.parts:
-        for part in response.candidates[0].content.parts:
+        if not response.candidates:
+            print("No response, stopping.")
+            break
+
+        # String representation of final text (if the model is done)
+        candidate = response.candidates[0]
+        messages.append(candidate.content)
+
+        has_function_call = False
+        final_texts = []
+
+        for part in candidate.content.parts:
             if part.function_call:
+                has_function_call = True
                 function_result = call_function(part.function_call, verbose=verbose)
-                # validate that function call produced a response
-                if not (
-                    function_result.parts
-                    and function_result.parts[0].function_response
-                    and function_result.parts[0].function_response.response
-                ):
-                    raise RuntimeError("Fatal: Function call returned no response.")
+                messages.append(function_result)
             elif part.text:
-                reply_text = part.text
-                add_message("model", reply_text)
-                print(reply_text)
+                final_texts.append(part.text)
+
+        # Only finish if there was NO tool call in this iteration
+        if not has_function_call and final_texts:
+            print("Final response:")
+            print("\n".join(final_texts))
+            break
 
     if verbose:
         print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
