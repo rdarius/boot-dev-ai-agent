@@ -3,6 +3,7 @@ import sys
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from functions.call_function import call_function
 from functions.get_files_info import schema_get_files_info
 from functions.get_file_content import schema_get_file_content
 from functions.run_python_file import schema_run_python_file
@@ -75,14 +76,17 @@ def main():
     if response.candidates[0].content.parts:
         for part in response.candidates[0].content.parts:
             if part.function_call:
-                function_call_part = part.function_call
-                print(f"Calling function: {function_call_part.name}({function_call_part.args})")
+                function_result = call_function(part.function_call, verbose=verbose)
+                # validate that function call produced a response
+                if not (
+                    function_result.parts
+                    and function_result.parts[0].function_response
+                    and function_result.parts[0].function_response.response
+                ):
+                    raise RuntimeError("Fatal: Function call returned no response.")
             elif part.text:
                 reply_text = part.text
-
-                # Add AI response to history
                 add_message("model", reply_text)
-
                 print(reply_text)
 
     if verbose:
